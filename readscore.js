@@ -33,6 +33,7 @@ const questions = [
 let currentQ = 0;
 let answers = Array(questions.length).fill('');
 let evaluationResults = []; // Store AI evaluation results
+let currentUser = null;
 
 // ─────────────────────────────────────
 //  2. PAGE NAVIGATION
@@ -47,14 +48,58 @@ function showPage(id) {
 //  3. AUTH — LOGIN / REGISTER
 // ─────────────────────────────────────
 function handleLogin() {
-  const username = document.querySelector('#page-home input[type="text"]').value.trim().toLowerCase();
+  const username = document.getElementById('home-username').value.trim();
+  const password = document.getElementById('home-password').value;
 
-  if (username === 'teacher' || username === 'admin') {
-    showPage('page-classroom');
-  } else {
-    showPage('page-reading');
-    document.getElementById('reading-fill').style.width = '15%';
+  if (!username || !password) {
+    showToast('✗', 'Please enter username and password');
+    return;
   }
+
+  // Try server-side login first
+  try {
+    fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    }).then(r => r.json()).then(data => {
+      if (data && data.success) {
+        currentUser = { username: data.username, role: data.role, fullName: data.fullName || '' };
+        localStorage.setItem('rs_user', JSON.stringify(currentUser));
+        showToast('✓', `Welcome, ${currentUser.username}!`);
+        if (currentUser.role === 'teacher') {
+          showPage('page-classroom');
+        } else {
+          showPage('page-reading');
+          document.getElementById('reading-fill').style.width = '15%';
+        }
+      } else {
+        // fallback to client simulation
+        showToast('⚠', data?.error || 'Login failed; using offline fallback');
+        offlineLoginFallback(username);
+      }
+    }).catch(() => {
+      showToast('⚠', 'Server unreachable — offline login');
+      offlineLoginFallback(username);
+    });
+  } catch (e) {
+    showToast('✗', 'Login error');
+    offlineLoginFallback(username);
+  }
+}
+
+function offlineLoginFallback(username) {
+  if (username.toLowerCase() === 'teacher') {
+    currentUser = { role: 'teacher', username };
+    localStorage.setItem('rs_user', JSON.stringify(currentUser));
+    showPage('page-classroom');
+    showToast('✓', `Welcome, ${username}!`);
+    return;
+  }
+  currentUser = { role: 'student', username };
+  localStorage.setItem('rs_user', JSON.stringify(currentUser));
+  showPage('page-reading');
+  document.getElementById('reading-fill').style.width = '15%';
 }
 
 function handleCodeJoin() {
@@ -77,15 +122,72 @@ function showStudentCodeEntry() {
 
 function handleRegister() {
   const isTeacher = document.getElementById('role-teacher').classList.contains('active');
+  const fullName = document.getElementById('reg-fullname').value.trim();
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const confirm = document.getElementById('reg-password-confirm').value;
+  const classroom = document.getElementById('reg-classroom').value.trim();
 
-  if (isTeacher) {
-    showPage('page-classroom');
-    showToast('✓', 'Welcome, Teacher! Your classroom is ready.');
-  } else {
-    showPage('page-reading');
-    document.getElementById('reading-fill').style.width = '15%';
-    showToast('✓', 'Account created! Time to read.');
+  if (!fullName || !username || !password || !confirm) {
+    showToast('✗', 'Please fill all required fields');
+    return;
   }
+
+  if (password.length < 8) {
+    showToast('✗', 'Password must be at least 8 characters');
+    return;
+  }
+
+  if (password !== confirm) {
+    showToast('✗', 'Passwords do not match');
+    return;
+  }
+
+  if (isTeacher && !classroom) {
+    showToast('✗', 'Please enter your classroom name');
+    return;
+  }
+
+  // Try server-side registration
+  try {
+    fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, username, password, role: isTeacher ? 'teacher' : 'student', classroom })
+    }).then(r => r.json()).then(data => {
+      if (data && data.success) {
+        currentUser = { role: data.role, username: data.username, fullName: data.fullName };
+        localStorage.setItem('rs_user', JSON.stringify(currentUser));
+        showToast('✓', 'Account created successfully');
+        if (data.role === 'teacher') {
+          showPage('page-classroom');
+        } else {
+          showPage('page-reading');
+          document.getElementById('reading-fill').style.width = '15%';
+        }
+      } else {
+        showToast('⚠', data?.error || 'Registration failed — offline fallback');
+        // fallback: store in localStorage
+        currentUser = { role: isTeacher ? 'teacher' : 'student', username, fullName, classroom: isTeacher ? classroom : null };
+        localStorage.setItem('rs_user', JSON.stringify(currentUser));
+        if (currentUser.role === 'teacher') showPage('page-classroom'); else showPage('page-reading');
+      }
+    }).catch(() => {
+      showToast('⚠', 'Server unreachable — offline registration');
+      currentUser = { role: isTeacher ? 'teacher' : 'student', username, fullName, classroom: isTeacher ? classroom : null };
+      localStorage.setItem('rs_user', JSON.stringify(currentUser));
+      if (currentUser.role === 'teacher') showPage('page-classroom'); else showPage('page-reading');
+    });
+  } catch (e) {
+    showToast('✗', 'Registration error');
+  }
+}
+
+function togglePassword(fieldId, checkboxId) {
+  const field = document.getElementById(fieldId);
+  const cb = document.getElementById(checkboxId);
+  if (!field || !cb) return;
+  field.type = cb.checked ? 'text' : 'password';
 }
 
 function setRole(role) {
@@ -126,6 +228,22 @@ function renderQ() {
     `<span class="bloom-badge ${bloomClass}">Bloom's: ${q.bloom}</span>`;
 
   renderQNav();
+  updateNextButton();
+}
+
+function updateNextButton() {
+  const nextBtn = document.getElementById('next-btn');
+  if (!nextBtn) return;
+
+  const unanswered = answers.filter(a => !a.trim()).length;
+  const isCurrentUnanswered = !answers[currentQ].trim();
+
+  // If the current question is the last unanswered one, change label
+  if (unanswered === 1 && isCurrentUnanswered) {
+    nextBtn.textContent = 'Submit All';
+  } else {
+    nextBtn.textContent = 'Next';
+  }
 }
 
 function renderQNav() {
@@ -147,6 +265,7 @@ function saveAnswer() {
   answers[currentQ] = document.getElementById('a-text').value;
   document.getElementById('word-count').textContent = wordCount(answers[currentQ]) + ' words';
   renderQNav();
+  updateNextButton();
 }
 
 function wordCount(str) {
@@ -155,6 +274,16 @@ function wordCount(str) {
 
 function changeQ(dir) {
   saveAnswer();
+
+  // If moving forward and there are no more unanswered questions, submit instead
+  if (dir > 0) {
+    const unanswered = answers.filter(a => !a.trim()).length;
+    if (unanswered === 0) {
+      submitAssessment();
+      return;
+    }
+  }
+
   currentQ = Math.max(0, Math.min(questions.length - 1, currentQ + dir));
   renderQ();
 }
@@ -308,22 +437,13 @@ function showResults() {
   document.getElementById('res-level').textContent = level;
   document.getElementById('res-level-desc').textContent = levelDesc;
 
-  // Calculate NLI metrics
-  const correctCount = evaluationResults.filter(r => r.result.is_correct === 1).length;
-  document.getElementById('res-nli').textContent = `Entailment — ${correctCount}/${questions.length}`;
+  document.getElementById('res-bloom-overall').textContent = overall + '%';
+  document.getElementById('res-bloom-bar').style.width = overall + '%';
 
-  // Calculate average BERTScore (using answer_entailment as proxy)
-  const bertScores = evaluationResults.map(r => r.result.answer_entailment);
-  const avgBert = bertScores.reduce((a, b) => a + b, 0) / bertScores.length;
-  document.getElementById('res-bert').textContent = avgBert.toFixed(2);
-
-  // Animate bars
-  setTimeout(() => {
-    if (scores.Remember !== undefined) setBar('remember', scores.Remember);
-    if (scores.Understand !== undefined) setBar('understand', scores.Understand);
-    if (scores.Apply !== undefined) setBar('apply', scores.Apply);
-    if (scores.Analyze !== undefined) setBar('analyze', scores.Analyze);
-  }, 200);
+  renderAnswerPreview(questions.map((q, idx) => ({
+    question: q.q,
+    answer: answers[idx] || 'No answer provided.'
+  })));
 
   // Log detailed results to console
   console.log('=== DETAILED EVALUATION RESULTS ===');
@@ -339,9 +459,35 @@ function showResults() {
   });
 }
 
-function setBar(id, pct) {
-  document.getElementById('bar-' + id).style.width = pct + '%';
-  document.getElementById('pct-' + id).textContent = pct + '%';
+function renderAnswerPreview(items) {
+  const list = document.getElementById('answer-preview-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!items || !items.length) {
+    list.innerHTML = '<div class="answer-preview-item">No answers available to preview.</div>';
+    return;
+  }
+
+  items.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'answer-preview-item';
+
+    const header = document.createElement('div');
+    header.className = 'answer-preview-item-header';
+    header.innerHTML = `
+      <div class="question-index">${idx + 1}</div>
+      <div class="question-title">${item.question}</div>
+    `;
+
+    const answerText = document.createElement('div');
+    answerText.className = 'answer-preview-item-text';
+    answerText.textContent = item.answer || 'No answer provided.';
+
+    card.appendChild(header);
+    card.appendChild(answerText);
+    list.appendChild(card);
+  });
 }
 
 // ─────────────────────────────────────
@@ -359,15 +505,14 @@ function viewStudentResult(name, score, level) {
     Frustration: 'Struggles significantly',
   };
   document.getElementById('res-level-desc').textContent = descs[level] || '';
-  document.getElementById('res-nli').textContent = 'Entailment — 4/5';
-  document.getElementById('res-bert').textContent = (0.76 + Math.random() * 0.15).toFixed(2);
+  document.getElementById('res-bloom-overall').textContent = score + '%';
+  document.getElementById('res-bloom-bar').style.width = score + '%';
 
-  setTimeout(() => {
-    setBar('remember', 85 + Math.round(Math.random() * 10));
-    setBar('understand', 70 + Math.round(Math.random() * 15));
-    setBar('apply', 55 + Math.round(Math.random() * 20));
-    setBar('analyze', 40 + Math.round(Math.random() * 20));
-  }, 200);
+  renderAnswerPreview([
+    { question: 'What was the main message of the passage?', answer: 'The passage explained how important it is to conserve water and protect water sources.' },
+    { question: 'Name two ways people can save water.', answer: 'They can turn off taps while brushing and collect rainwater for plants.' },
+    { question: 'How does pollution affect communities?', answer: 'Polluted water makes it unsafe to drink and harms people, animals, and plants.' }
+  ]);
 }
 
 function copyCode() {
@@ -376,7 +521,8 @@ function copyCode() {
 }
 
 function showNewAssessmentModal() {
-  showToast('📋', 'New assessment flow coming soon!');
+  // Navigate to the teacher assessment editor page
+  window.location.href = 'new_assessment.html';
 }
 
 // ─────────────────────────────────────
