@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ReadScore</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="readscore.css" />
+
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     PAGE: HOME
+══════════════════════════════════════ -->
+<div id="page-home" class="page active">
+  <nav>
+    <div class="nav-logo">ReadScore</div>
+    <div class="nav-links">
+      <a onclick="showPage('page-home')">Home</a>
+      <a href="#">About us</a>
+      <a href="#">Blog</a>
+      <a href="#">Contact us</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-badge"><span></span> Phil-IRI Aligned Assessment</div>
+      <h1>Automated<br/><em>Reading</em><br/>Comprehension<br/>Scoring</h1>
+      <p>Phil-IRI aligned. Bloom's Taxonomy weighted. NLI-powered. A smarter way to evaluate Grade 6 reading comprehension with semantic precision.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg" onclick="showPage('page-register')">Get Started</button>
+        <button class="btn btn-ghost btn-lg" onclick="showStudentCodeEntry()">Enter Class Code</button>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="login-card">
+        <h3>Sign in</h3>
+        <p>Continue to your dashboard</p>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" placeholder="Enter your username" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" placeholder="••••••••" />
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="handleLogin()">Login</button>
+        <div class="login-divider">— or —</div>
+        <div class="code-bar">
+          <label>Code</label>
+          <input type="text" id="home-class-code" placeholder="RC-XXXX" maxlength="7" />
+        </div>
+        <button class="btn btn-ghost" style="width:100%;" onclick="handleCodeJoin()">Join with Class Code</button>
+        <div class="login-link">Don't have an account? <a onclick="showPage('page-register')">Register</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features-strip">
+    <div class="feature-item">
+      <div class="feature-tag">NLI Scoring</div>
+      <div class="feature-name">DeBERTa Semantic Gate</div>
+      <div class="feature-desc">Ensures correctness before scoring with Natural Language Inference classification.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-tag">BERTScore</div>
+      <div class="feature-name">Contextual Similarity</div>
+      <div class="feature-desc">Measures semantic overlap between student and reference answers using BERT embeddings.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-tag">Bloom's Weight</div>
+      <div class="feature-name">Cognitive-Level Scoring</div>
+      <div class="feature-desc">Questions are weighted by cognitive level — from Remember to Analyze — for richer insights.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-tag">Phil-IRI</div>
+      <div class="feature-name">Official Reading Levels</div>
+      <div class="feature-desc">Results map directly to Independent, Instructional, or Frustration reading levels.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: REGISTER
+══════════════════════════════════════ -->
+<div id="page-register" class="page">
+  <nav>
+    <div class="nav-logo" onclick="showPage('page-home')" style="cursor:pointer;">ReadScore</div>
+    <div class="nav-links"><a onclick="showPage('page-home')">← Back to Home</a></div>
+  </nav>
+  <div id="page-register-inner" style="flex:1;display:flex;align-items:center;justify-content:center;padding:60px 20px;">
+    <div class="register-card">
+      <h2>Create account</h2>
+      <p class="subtitle">Choose your role to continue</p>
+
+      <div class="role-toggle">
+        <button class="role-btn" id="role-teacher" onclick="setRole('teacher')">Teacher</button>
+        <button class="role-btn active" id="role-student" onclick="setRole('student')">Student</button>
+      </div>
+
+      <div class="light-form">
+        <div class="form-group">
+          <label>Full name</label>
+          <input type="text" placeholder="e.g. Maria Santos" />
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" placeholder="e.g. mariasantos" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" placeholder="At least 8 characters" />
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" placeholder="Re-enter password" />
+        </div>
+        <div class="form-group" id="classroom-field" style="display:none;">
+          <label>Classroom name</label>
+          <input type="text" placeholder="e.g. Grade 6 - Sampaguita" />
+        </div>
+      </div>
+
+      <button class="btn btn-navy" style="width:100%;margin-top:8px;" onclick="handleRegister()">Register</button>
+      <div class="register-footer">Already have an account? <a onclick="showPage('page-home')">Login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: READING
+══════════════════════════════════════ -->
+<div id="page-reading" class="page">
+  <nav>
+    <div class="nav-logo">ReadScore</div>
+    <div class="nav-links"><a href="#">Assessment in progress</a></div>
+  </nav>
+  <div class="reading-progress-bar"><div class="reading-progress-fill" id="reading-fill"></div></div>
+  <div class="reading-main">
+    <div class="passage-card">
+      <div class="passage-label">Reading Passage</div>
+      <h2>The Importance of Saving Water</h2>
+      <p class="passage-text">
+        Water is one of the most important resources on Earth. Every living thing — humans, animals, and plants — needs water to survive. However, clean and fresh water is not unlimited. Only about three percent of all water on Earth is fresh water, and most of it is frozen in glaciers and ice caps.
+        <br/><br/>
+        In the Philippines, many communities still struggle with water shortages, especially during dry seasons. Rivers and lakes are sometimes polluted due to improper waste disposal, making the water unsafe to drink. This affects not only the health of the people but also the animals and plants that depend on those water sources.
+        <br/><br/>
+        There are many simple ways we can help save water in our daily lives. Turning off the faucet while brushing teeth, fixing leaky pipes, and collecting rainwater for watering plants are small steps that make a big difference. When everyone works together to conserve water, we help ensure that future generations will also have enough clean water to drink and use.
+      </p>
+      <div class="passage-footer">
+        <button class="btn btn-primary" onclick="showPage('page-assessment'); initAssessment();">
+          Done — Proceed to Questions
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: ASSESSMENT
+══════════════════════════════════════ -->
+<div id="page-assessment" class="page">
+  <nav>
+    <div class="nav-logo">ReadScore</div>
+    <div class="nav-links"><span id="qa-progress-label" style="color:rgba(255,255,255,0.6);font-size:0.88rem;">Question 1 of 5</span></div>
+  </nav>
+  <div class="assessment-body">
+    <div class="aside-passage">
+      <h4>Passage Reference</h4>
+      <p>
+        Water is one of the most important resources on Earth. Every living thing — humans, animals, and plants — needs water to survive. However, clean and fresh water is not unlimited. Only about three percent of all water on Earth is fresh water...
+        <br/><br/>
+        In the Philippines, many communities still struggle with water shortages, especially during dry seasons. Rivers and lakes are sometimes polluted due to improper waste disposal, making the water unsafe to drink...
+        <br/><br/>
+        There are many simple ways we can help save water. Turning off the faucet while brushing teeth, fixing leaky pipes, and collecting rainwater for watering plants are small steps that make a big difference...
+      </p>
+    </div>
+
+    <div class="qa-panel">
+      <div class="qa-header">
+        <h3>Question &amp; Answer</h3>
+        <button class="btn btn-primary btn-sm" onclick="submitAssessment()">Submit All</button>
+      </div>
+
+      <!-- Q nav -->
+      <div class="q-nav" id="q-nav"></div>
+
+      <!-- Bloom badge -->
+      <div id="bloom-badge-wrap" style="margin-bottom:14px;"></div>
+
+      <!-- Question box -->
+      <div class="question-box" id="q-text">Loading question...</div>
+
+      <!-- Answer textarea -->
+      <textarea class="answer-box" id="a-text" placeholder="Write your answer here..." oninput="saveAnswer()"></textarea>
+
+      <div class="qa-footer">
+        <div class="qa-footer-left">
+          <button class="btn btn-outline btn-sm" onclick="changeQ(-1)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Previous
+          </button>
+          <button class="btn btn-navy btn-sm" onclick="changeQ(1)">
+            Next
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <span id="word-count" style="font-size:0.8rem;color:var(--text-muted);">0 words</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: RESULT
+══════════════════════════════════════ -->
+<div id="page-result" class="page">
+  <nav>
+    <div class="nav-logo">ReadScore</div>
+    <div class="nav-logout" onclick="showPage('page-home')">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Logout
+    </div>
+  </nav>
+  <div class="result-main">
+    <h2>Assessment Results</h2>
+    <div class="result-top">
+      <div class="score-card">
+        <div class="label">Overall Score</div>
+        <div class="big-num" id="res-score">—</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);">Comprehension percentage</div>
+      </div>
+      <div class="level-card">
+        <div class="label">Phil-IRI Level</div>
+        <div class="level-name" id="res-level">—</div>
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.45);margin-top:4px;" id="res-level-desc">—</div>
+      </div>
+    </div>
+    <div class="result-bottom">
+      <div class="bloom-card">
+        <h4>Score by Bloom's Level</h4>
+        <div class="bloom-row">
+          <div class="bloom-row-label">Remember</div>
+          <div class="bloom-bar-wrap"><div class="bloom-bar" id="bar-remember" style="width:0%;background:#4a9eff;"></div></div>
+          <div class="bloom-row-pct" id="pct-remember">—</div>
+        </div>
+        <div class="bloom-row">
+          <div class="bloom-row-label">Understand</div>
+          <div class="bloom-bar-wrap"><div class="bloom-bar" id="bar-understand" style="width:0%;background:#2ecc8a;"></div></div>
+          <div class="bloom-row-pct" id="pct-understand">—</div>
+        </div>
+        <div class="bloom-row">
+          <div class="bloom-row-label">Apply</div>
+          <div class="bloom-bar-wrap"><div class="bloom-bar" id="bar-apply" style="width:0%;background:#e8a030;"></div></div>
+          <div class="bloom-row-pct" id="pct-apply">—</div>
+        </div>
+        <div class="bloom-row">
+          <div class="bloom-row-label">Analyze</div>
+          <div class="bloom-bar-wrap"><div class="bloom-bar" id="bar-analyze" style="width:0%;background:#a060e8;"></div></div>
+          <div class="bloom-row-pct" id="pct-analyze">—</div>
+        </div>
+      </div>
+      <div class="metrics-col">
+        <div class="metric-card">
+          <div class="m-label">NLI Correctness</div>
+          <div class="m-value" id="res-nli">—</div>
+          <div class="m-sub">Entailment classification</div>
+        </div>
+        <div class="metric-card">
+          <div class="m-label">BERTScore Avg.</div>
+          <div class="m-value" id="res-bert">—</div>
+          <div class="m-sub">Semantic similarity score</div>
+        </div>
+        <div style="margin-top:auto;">
+          <button class="btn btn-navy" style="width:100%;" onclick="showPage('page-home')">Return to Home</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: CLASSROOM (Teacher)
+══════════════════════════════════════ -->
+<div id="page-classroom" class="page">
+  <nav>
+    <div class="nav-logo">ReadScore</div>
+    <div class="nav-logout" onclick="showPage('page-home')">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Logout
+    </div>
+  </nav>
+  <div class="classroom-main">
+    <div class="classroom-header">
+      <div class="classroom-title">
+        <h2>My Classroom</h2>
+        <div class="class-code-badge" onclick="copyCode()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Code: RC-4821
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="showNewAssessmentModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        New Assessment
+      </button>
+    </div>
+
+    <div class="students-table">
+      <div class="table-head">
+        <div>Student Name</div>
+        <div>Phil-IRI Grade</div>
+        <div>State</div>
+        <div></div>
+      </div>
+      <div class="table-row" onclick="viewStudentResult('PRINCE DIONES', 78, 'Instructional')">
+        <div class="student-name">
+          <div class="student-avatar">PD</div>
+          PRINCE DIONES
+        </div>
+        <div><span class="grade-pill grade-instructional">Instructional</span></div>
+        <div><span class="state-done state-pill">● Done</span></div>
+        <div class="row-action"><button class="dots-btn" onclick="event.stopPropagation()">···</button></div>
+      </div>
+      <div class="table-row" onclick="viewStudentResult('RENIEL GAHUMAN', 47, 'Frustration')">
+        <div class="student-name">
+          <div class="student-avatar">RG</div>
+          RENIEL GAHUMAN
+        </div>
+        <div><span class="grade-pill grade-frustration">Frustration</span></div>
+        <div><span class="state-done state-pill">● Done</span></div>
+        <div class="row-action"><button class="dots-btn" onclick="event.stopPropagation()">···</button></div>
+      </div>
+      <div class="table-row">
+        <div class="student-name">
+          <div class="student-avatar" style="background:var(--cream-dark);color:var(--text-muted);">JR</div>
+          JAMES ROMULO
+        </div>
+        <div><span class="grade-pill grade-pending">Pending</span></div>
+        <div><span class="state-pending state-pill">○ Pending</span></div>
+        <div class="row-action"><button class="dots-btn" onclick="event.stopPropagation()">···</button></div>
+      </div>
+      <div class="table-row">
+        <div class="student-name">
+          <div class="student-avatar" style="background:var(--cream-dark);color:var(--text-muted);">AL</div>
+          ANA LOPEZ
+        </div>
+        <div><span class="grade-pill grade-pending">Pending</span></div>
+        <div><span class="state-pending state-pill">○ Pending</span></div>
+        <div class="row-action"><button class="dots-btn" onclick="event.stopPropagation()">···</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Copied!</span>
+</div>
+
+<script src="readscore.js"></script>
+</body>
+</html>
